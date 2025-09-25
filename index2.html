@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Big Heart Animation</title>
+    <style>
+        body { margin:0; background:rgb(10,5,25); overflow:hidden; display:flex; justify-content:center; align-items:center; height:100vh; }
+        canvas { display:block; }
+    </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const WIDTH = canvas.width;
+const HEIGHT = canvas.height;
+const PARTICLE_COUNT = 5000;
+const NAME = "Love You Friends";
+
+let timeCounter = 0;
+
+// ------------------- Heart Points Generator -------------------
+function heartPoints(n, scale, offset) {
+    const points = [];
+    for (let i=0; i<n; i++) {
+        const t = Math.random()*2*Math.PI;
+        const r = 0.5 + Math.random()*0.5;
+        let x = scale*r*(16*Math.sin(t)**3);
+        let y = -scale*r*(13*Math.cos(t) -5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t));
+        x += Math.random()*3 -1.5;
+        y += Math.random()*3 -1.5;
+        points.push({x:x+offset[0], y:y+offset[1]});
+    }
+    return points;
+}
+
+const scaleX = (WIDTH-50)/32;
+const scaleY = (HEIGHT-50)/20;
+const HEART_SCALE = Math.min(scaleX, scaleY);
+const heartPositions = heartPoints(PARTICLE_COUNT, HEART_SCALE, [WIDTH/2, HEIGHT/2]);
+
+// ------------------- Particle Class -------------------
+class Particle {
+    constructor(target){
+        this.x = Math.random()*WIDTH;
+        this.y = Math.random()*HEIGHT;
+        this.target = target;
+        this.speed = 0.02 + Math.random()*0.03;
+        this.size = 2 + Math.random();
+        this.hue = Math.random();
+    }
+    update(pulseScale){
+        const tx = this.target.x;
+        const ty = this.target.y;
+        const cx = WIDTH/2;
+        const cy = HEIGHT/2;
+        const dx = cx + (tx-cx)*pulseScale - this.x;
+        const dy = cy + (ty-cy)*pulseScale - this.y;
+        this.x += dx*this.speed;
+        this.y += dy*this.speed;
+        this.hue += 0.002;
+        if(this.hue>1) this.hue -=1;
+    }
+    draw(ctx){
+        const rgb = HSVtoRGB(this.hue,1,1);
+        ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+        ctx.beginPath();
+        ctx.arc(this.x,this.y,this.size,0,2*Math.PI);
+        ctx.fill();
+    }
+}
+
+function HSVtoRGB(h,s,v){
+    let r,g,b;
+    let i = Math.floor(h*6);
+    let f = h*6-i;
+    let p = v*(1-s);
+    let q = v*(1-f*s);
+    let t = v*(1-(1-f)*s);
+    switch(i%6){
+        case 0: r=v; g=t; b=p; break;
+        case 1: r=q; g=v; b=p; break;
+        case 2: r=p; g=v; b=t; break;
+        case 3: r=p; g=q; b=v; break;
+        case 4: r=t; g=p; b=v; break;
+        case 5: r=v; g=p; b=q; break;
+    }
+    return [Math.floor(r*255), Math.floor(g*255), Math.floor(b*255)];
+}
+
+const particles = heartPositions.map(p=>new Particle(p));
+
+// ------------------- Animation Loop -------------------
+function animate(){
+    ctx.fillStyle = 'rgb(10,5,25)';
+    ctx.fillRect(0,0,WIDTH,HEIGHT);
+    timeCounter++;
+    const pulseScale = 1 + 0.05*Math.sin(timeCounter*0.05);
+    particles.forEach(p=>{p.update(pulseScale); p.draw(ctx);});
+
+    if(timeCounter>300){
+        const scaleFactor = 1 + 0.05*Math.sin(timeCounter*0.1);
+        const hue = (timeCounter*0.005)%1;
+        const rgb = HSVtoRGB(hue,1,1);
+        ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+        ctx.font = `${72*scaleFactor}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(NAME, WIDTH/2, HEIGHT/2);
+    }
+
+    requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>
